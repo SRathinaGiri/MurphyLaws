@@ -3,6 +3,7 @@
   "short_name": "மர்பி",
   "description": "தமிழில் 1600-க்கும் மேற்பட்ட மர்பி விதிகள்",
   "lang": "ta",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

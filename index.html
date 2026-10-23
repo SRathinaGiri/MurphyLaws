@@ -137,6 +137,10 @@
     <div class="topbar">
       <img src="icons/icon-192.png" alt="">
       <h1>மர்பி விதிகள் <small>சுப. இரத்தினகிரி</small></h1>
+      <button class="icon-btn" id="installBtn" type="button" hidden aria-label="செயலியாக நிறுவு" title="செயலியாக நிறுவு">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+        <span class="theme-label">நிறுவு</span>
+      </button>
       <button class="icon-btn" id="themeBtn" type="button" aria-label="தீம் மாற்று">
         <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
         <span class="theme-label" id="themeLabel"></span>
@@ -459,6 +463,18 @@
   saveFavs();
   els.pagedBtn.setAttribute('aria-pressed', paged);
   if (location.hash) fromHash(); else compute();
+
+  // Chrome/Edge only: surface install in the UI, since Android Chrome tucks it under "Add to home screen".
+  const installBtn = $('installBtn');
+  let installEvt = null;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; installBtn.hidden = false; });
+  addEventListener('appinstalled', () => { installEvt = null; installBtn.hidden = true; toast('செயலி நிறுவப்பட்டது'); });
+  installBtn.addEventListener('click', async () => {
+    if (!installEvt) return;
+    installEvt.prompt();
+    await installEvt.userChoice;
+    installEvt = null; installBtn.hidden = true;
+  });
 
   if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
     addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
