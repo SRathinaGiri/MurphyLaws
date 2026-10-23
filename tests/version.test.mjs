@@ -1,0 +1,44 @@
+// Every release must bump the version everywhere, including the service-worker cache name;
+// otherwise installed PWAs keep serving the old cache. Run: node --test tests/
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const read = f => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+
+test('version is identical in index.html, service worker and manifest', () => {
+  const html = read('index.html');
+  const version = html.match(/const VERSION = '(\d+\.\d+\.\d+)'/)?.[1];
+  assert.ok(version, 'VERSION constant not found in index.html');
+  const sw = read('sw.js').match(/CACHE_VERSION = 'murphy-v([\d.]+)'/);
+  assert.ok(sw, 'CACHE_VERSION not found in sw.js');
+  assert.equal(sw[1], version, 'sw.js CACHE_VERSION not bumped');
+  assert.equal(JSON.parse(read('manifest.webmanifest')).version, version, 'manifest version not bumped');
+  const tags = [...html.matchAll(/v=?(\d+\.\d+\.\d+)/g)].map(m => m[1]);
+  assert.ok(tags.length >= 2, 'expected version badge + laws.js?v= in index.html');
+  for (const t of tags) assert.equal(t, version, `index.html still references v${t}`);
+});
+
+test('service worker only deletes its own old caches (other apps share the github.io origin)', () => {
+  const sw = read('sw.js');
+  assert.match(sw, /CACHE_PREFIX = 'murphy-'/);
+  const activate = sw.slice(sw.indexOf("addEventListener('activate'"), sw.indexOf("addEventListener('message'"));
+  assert.match(activate, /startsWith\(CACHE_PREFIX\)/, 'activate must filter cache names by our prefix');
+  assert.match(sw, /cache: 'reload'/, 'service worker must pre-cache from the network');
+});
+
+test('PWA is installable: PNG 192/512 icons (any + maskable) exist, are listed and pre-cached', () => {
+  const m = JSON.parse(read('manifest.webmanifest'));
+  assert.equal(m.display, 'standalone');
+  assert.ok(m.start_url && m.scope && m.id, 'start_url, scope and id required');
+  const sw = read('sw.js');
+  for (const purpose of ['any', 'maskable']) {
+    for (const size of ['192x192', '512x512']) {
+      const icon = m.icons.find(i => i.type === 'image/png' && i.sizes === size && i.purpose === purpose);
+      assert.ok(icon, `manifest lacks a ${size} ${purpose} PNG icon`);
+      const png = readFileSync(new URL(`../${icon.src}`, import.meta.url));
+      assert.equal(png.readUInt32BE(16), +size.split('x')[0], `${icon.src} is not ${size}`);
+      assert.ok(sw.includes(`'./${icon.src}'`), `sw.js does not cache ${icon.src}`);
+    }
+  }
+});

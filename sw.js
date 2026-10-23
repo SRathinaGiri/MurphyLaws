@@ -1,28 +1,55 @@
-// Bump CACHE when the asset list changes, to drop stale entries.
-const CACHE = 'murphy-v2';
-const ASSETS = [
-  './', 'index.html', 'laws.js', 'manifest.webmanifest',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-192.png', 'icons/maskable-512.png',
-  'icons/apple-touch-icon.png', 'icons/favicon.png',
+// Network-first with offline fallback (same pattern as 3D Labyrinth).
+// Every release bumps CACHE_VERSION together with VERSION in index.html; tests/version.test.mjs enforces it.
+const CACHE_PREFIX = 'murphy-';
+const CACHE_VERSION = 'murphy-v1.1.0';
+const ASSETS_TO_CACHE = [
+  './',
+  './index.html',
+  './laws.js',
+  './manifest.webmanifest',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/maskable-192.png',
+  './icons/maskable-512.png',
+  './icons/apple-touch-icon.png',
+  './icons/favicon.png'
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+self.addEventListener('install', event => {
+  event.waitUntil(
+    // cache: 'reload' = straight from the network: the HTTP cache may still hold the previous release
+    caches.open(CACHE_VERSION)
+      .then(cache => cache.addAll(ASSETS_TO_CACHE.map(u => new Request(u, { cache: 'reload' }))))
+      .catch(err => console.warn('[SW] pre-cache:', err))
+  );
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-    .then(() => self.clients.claim()));
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      // Only our own old caches: the other apps on srathinagiri.github.io keep their offline copies.
+      .then(names => Promise.all(names.filter(n => n.startsWith(CACHE_PREFIX) && n !== CACHE_VERSION).map(n => caches.delete(n))))
+      .then(() => self.clients.claim())
+  );
 });
 
-// Network-first so edits to laws/index show up without a version bump; cache keeps it working offline.
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
-  e.respondWith(
-    fetch(e.request).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
+  // Revalidate with the server ('no-cache'): GitHub Pages lets the HTTP cache keep files for 10 minutes.
+  // Navigations can't take a RequestInit, so fetch them as-is.
+  const req = event.request;
+  const network = req.mode === 'navigate' ? fetch(req) : fetch(req, { cache: 'no-cache' });
+  event.respondWith(
+    network.then(res => {
+      if (res && res.status === 200 && res.type === 'basic') {
+        const copy = res.clone();
+        caches.open(CACHE_VERSION).then(cache => cache.put(event.request, copy));
+      }
       return res;
-    }).catch(() => caches.match(e.request, { ignoreSearch: true }))
+    }).catch(() => caches.match(event.request, { ignoreSearch: true }))
   );
 });

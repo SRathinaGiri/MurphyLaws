@@ -127,6 +127,14 @@
   .top-btn.show { display: inline-flex; }
   footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 0 16px 24px; }
   footer a { color: inherit; }
+  .banner {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: max(72px, calc(env(safe-area-inset-bottom) + 56px));
+    z-index: 10; width: min(560px, calc(100% - 32px)); display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--accent); border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25); padding: 10px 12px; font-size: .92rem;
+  }
+  .banner[hidden] { display: none; }
+  .banner span { flex: 1; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   @media (max-width: 420px) { .theme-label { display: none; } select { max-width: 40%; } }
 </style>
@@ -178,20 +186,32 @@
   <div id="list"></div>
 </main>
 <footer class="wrap">
-  © சுப. இரத்தினகிரி · <a href="mailto:srathinagiri@gmail.com?subject=மர்பி விதிகள்">கருத்து அனுப்ப</a>
+  © சுப. இரத்தினகிரி · <a href="mailto:srathinagiri@gmail.com?subject=மர்பி விதிகள்">கருத்து அனுப்ப</a> · <span class="version-badge">v1.1.0</span>
 </footer>
+
+<div class="banner" id="updateBanner" hidden>
+  <span>புதிய பதிப்பு தயார்.</span>
+  <button class="tab" id="updateBtn" type="button" aria-pressed="true">புதுப்பி</button>
+  <button class="icon-btn" id="closeUpdateBtn" type="button" aria-label="மூடு">×</button>
+</div>
+<div class="banner" id="installHelp" hidden>
+  <span id="installHelpText"></span>
+  <button class="icon-btn" id="closeInstallHelp" type="button" aria-label="மூடு">×</button>
+</div>
 
 <button class="top-btn" id="topBtn" type="button" aria-label="மேலே செல்">
   <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
 </button>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="laws.js"></script>
+<script src="laws.js?v=1.1.0"></script>
 <script>
 (() => {
   'use strict';
 
-  const PAGE = 60;               // cards rendered per scroll batch; keeps first paint fast on phones
+  // Bump on every release, together with the v=… tags above, sw.js CACHE_VERSION and the manifest (tests/version.test.mjs).
+  const VERSION = '1.1.0';
+  const PAGE = 60;              // cards rendered per scroll batch; keeps first paint fast on phones
   const PAGE_SIZE = 10;          // laws per page in paged mode (same as the Android app)
   const MIN_WORD_COUNT = 5;      // a word must recur this often to appear in the dropdown
   const MAX_WORDS = 250;
@@ -464,22 +484,59 @@
   els.pagedBtn.setAttribute('aria-pressed', paged);
   if (location.hash) fromHash(); else compute();
 
-  // Chrome/Edge only: surface install in the UI, since Android Chrome tucks it under "Add to home screen".
+  // ---------- install as an app ----------
+  // Chrome/Edge fire beforeinstallprompt whenever the PWA is installable and not installed: the button
+  // shows then, and hides once used or installed (it returns if Chrome offers the prompt again).
+  // iOS never fires it, so there the button shows the Add-to-Home-Screen steps instead.
   const installBtn = $('installBtn');
+  const installHelp = $('installHelp');
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const HELP_ANDROID = 'Chrome-இல் ⋮ மெனு → "Add to home screen" (முகப்புத் திரையில் சேர்) → "Install" அழுத்தவும்.';
+  const HELP_IOS = 'Safari-இல் பகிர் ⬆ பொத்தான் → "Add to Home Screen" அழுத்தவும்.';
   let installEvt = null;
-  // Already running as the installed app: never offer install again.
-  addEventListener('beforeinstallprompt', e => { e.preventDefault(); if (standalone) return; installEvt = e; installBtn.hidden = false; });
-  addEventListener('appinstalled', () => { installEvt = null; installBtn.hidden = true; toast('செயலி நிறுவப்பட்டது'); });
-  installBtn.addEventListener('click', async () => {
-    if (!installEvt) return;
-    installEvt.prompt();
-    await installEvt.userChoice;
-    installEvt = null; installBtn.hidden = true;
-  });
+  const showHelp = text => { $('installHelpText').textContent = text; installHelp.hidden = false; };
+  const hideInstall = () => { installEvt = null; installBtn.hidden = true; };
+  $('closeInstallHelp').addEventListener('click', () => { installHelp.hidden = true; });
+  if (!standalone) {   // already running as the installed app: never offer install
+    addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; installBtn.hidden = false; });
+    addEventListener('appinstalled', () => { hideInstall(); installHelp.hidden = true; toast('செயலி நிறுவப்பட்டது'); });
+    if (isIOS) installBtn.hidden = false;
+    installBtn.addEventListener('click', async () => {
+      if (!installEvt) { showHelp(isIOS ? HELP_IOS : HELP_ANDROID); return; }
+      const evt = installEvt;
+      hideInstall();   // a prompt can be shown only once; Chrome fires a fresh event if it can offer again
+      try {
+        await evt.prompt();
+        await evt.userChoice;
+      } catch (err) {
+        console.warn('[install] prompt failed:', err);
+        showHelp(HELP_ANDROID);
+      }
+    });
+  }
 
+  // ---------- service worker + update banner ----------
   if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    const updateBanner = $('updateBanner');
+    const showUpdate = worker => {
+      updateBanner.hidden = false;
+      $('updateBtn').onclick = () => { $('updateBtn').textContent = '⏳'; worker.postMessage({ type: 'SKIP_WAITING' }); };
+    };
+    $('closeUpdateBtn').addEventListener('click', () => { updateBanner.hidden = true; });
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!refreshing) { refreshing = true; location.reload(); } });
+    addEventListener('load', () => {
+      navigator.serviceWorker.register(`./sw.js?v=${VERSION}`).then(reg => {
+        if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
+        reg.addEventListener('updatefound', () => {
+          const w = reg.installing;
+          w && w.addEventListener('statechange', () => {
+            if (w.state === 'installed' && navigator.serviceWorker.controller) showUpdate(w);
+          });
+        });
+      }).catch(err => console.warn('[SW] registration failed:', err));
+    });
   }
 })();
 </script>

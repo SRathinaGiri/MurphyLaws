@@ -18,6 +18,16 @@ Edit `murphy.db`, then regenerate the data file:
 python tools/export_laws.py
 ```
 
+## Releasing
+
+Every release bumps the version in **all** of: `VERSION` and the `v=…`/badge tags in `index.html`,
+`CACHE_VERSION` in `sw.js`, and `version` in `manifest.webmanifest`. Installed apps then show
+"புதிய பதிப்பு தயார்" with an Update button. Check before pushing:
+
+```
+node --test tests/*.test.mjs
+```
+
 ## Running locally
 
 ```
