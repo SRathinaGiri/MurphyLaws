@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="ta">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>மர்பி விதிகள்</title>
+<meta name="description" content="தமிழில் 1600-க்கும் மேற்பட்ட மர்பி விதிகள் — தேடல், விருப்பப் பட்டியல், பகிர்வு.">
+<meta name="theme-color" content="#1e3a6e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<script>
+  // Apply saved theme before first paint to avoid a light flash in dark mode.
+  try { const t = localStorage.getItem('murphy.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<style>
+  :root {
+    --bg: #f6f7fb; --surface: #ffffff; --text: #1d2433; --muted: #5d6679;
+    --border: #dfe3ec; --accent: #1e3a6e; --accent-text: #ffffff;
+    --chip: #e8edf7; --mark: #ffe58a; --star: #d99a00; --shadow: 0 1px 3px rgba(20,30,60,.08);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10131a; --surface: #1a1f2b; --text: #e6e9f0; --muted: #9aa3b5;
+      --border: #2b3242; --accent: #7fa6ff; --accent-text: #0d1220;
+      --chip: #252c3c; --mark: #6b5a12; --star: #ffc94a; --shadow: none;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10131a; --surface: #1a1f2b; --text: #e6e9f0; --muted: #9aa3b5;
+    --border: #2b3242; --accent: #7fa6ff; --accent-text: #0d1220;
+    --chip: #252c3c; --mark: #6b5a12; --star: #ffc94a; --shadow: none;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Noto Sans Tamil", "Nirmala UI", "Latha", system-ui, sans-serif;
+    font-size: 17px; line-height: 1.7;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  header {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 10px 16px 8px; padding-top: max(10px, env(safe-area-inset-top));
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .topbar { display: flex; align-items: center; gap: 10px; }
+  .topbar img { width: 36px; height: 36px; border-radius: 50%; }
+  h1 { font-size: 1.25rem; margin: 0; flex: 1; line-height: 1.3; }
+  h1 small { display: block; font-size: .72rem; font-weight: normal; color: var(--muted); }
+  .icon-btn {
+    background: transparent; border: 1px solid var(--border); border-radius: 10px;
+    min-width: 40px; height: 40px; padding: 0 10px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .icon-btn:hover { background: var(--chip); }
+  .icon-btn svg { width: 20px; height: 20px; flex: none; }
+
+  .search { display: flex; gap: 8px; margin-top: 10px; }
+  .search-box { position: relative; flex: 1; min-width: 0; }
+  .search-box input {
+    width: 100%; height: 42px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); padding: 0 38px 0 12px;
+  }
+  .search-box .clear {
+    position: absolute; right: 4px; top: 4px; width: 34px; height: 34px;
+    border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 1.2rem;
+  }
+  select {
+    height: 42px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); padding: 0 8px; max-width: 42%;
+  }
+  .tabs { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .tab {
+    border: 1px solid var(--border); background: transparent; border-radius: 999px;
+    padding: 2px 14px; cursor: pointer; font-size: .9rem;
+  }
+  .tab[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .status { margin-left: auto; font-size: .85rem; color: var(--muted); }
+
+  main { padding: 12px 16px 80px; }
+  .law {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: var(--shadow); padding: 12px 14px 8px; margin-bottom: 10px;
+  }
+  .law.target { border-color: var(--accent); border-width: 2px; }
+  .law p { margin: 0 0 4px; word-break: break-word; }
+  .law-foot { display: flex; align-items: center; gap: 4px; }
+  .num { font-size: .8rem; color: var(--muted); margin-right: auto; font-variant-numeric: tabular-nums; }
+  .law-foot button {
+    border: 0; background: transparent; cursor: pointer; width: 40px; height: 36px;
+    border-radius: 8px; color: var(--muted); display: inline-flex; align-items: center; justify-content: center;
+  }
+  .law-foot button:hover { background: var(--chip); color: var(--text); }
+  .law-foot svg { width: 20px; height: 20px; }
+  .fav[aria-pressed="true"] { color: var(--star); }
+  .fav[aria-pressed="true"] svg { fill: currentColor; }
+  mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 10px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 999px;
+    font-size: .9rem; opacity: 0; pointer-events: none; transition: .2s; max-width: calc(100% - 32px); text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .top-btn {
+    position: fixed; right: 16px; bottom: max(16px, env(safe-area-inset-bottom));
+    width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer;
+    background: var(--accent); color: var(--accent-text); box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    display: none; align-items: center; justify-content: center;
+  }
+  .top-btn.show { display: inline-flex; }
+  footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 0 16px 24px; }
+  footer a { color: inherit; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (max-width: 420px) { .theme-label { display: none; } select { max-width: 40%; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <img src="icons/icon-192.png" alt="">
+      <h1>மர்பி விதிகள் <small>சுப. இரத்தினகிரி</small></h1>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="தீம் மாற்று">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+        <span class="theme-label" id="themeLabel"></span>
+      </button>
+    </div>
+    <div class="search">
+      <div class="search-box">
+        <label for="q" class="sr-only">தேடு</label>
+        <input id="q" type="search" placeholder="தேடு… / #எண்" autocomplete="off" enterkeyhint="search">
+        <button class="clear" id="clearBtn" type="button" aria-label="தேடலை அழி" hidden>×</button>
+      </div>
+      <label for="words" class="sr-only">அதிகம் வரும் சொற்கள்</label>
+      <select id="words"><option value="">சொற்கள்</option></select>
+    </div>
+    <div class="tabs">
+      <button class="tab" id="tabAll" type="button" aria-pressed="true">அனைத்தும்</button>
+      <button class="tab" id="tabFav" type="button" aria-pressed="false">விரும்பியவை (<span id="favCount">0</span>)</button>
+      <span class="status" id="status" aria-live="polite"></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="list"></div>
+</main>
+<footer class="wrap">
+  © சுப. இரத்தினகிரி · <a href="mailto:srathinagiri@gmail.com?subject=மர்பி விதிகள்">கருத்து அனுப்ப</a>
+</footer>
+
+<button class="top-btn" id="topBtn" type="button" aria-label="மேலே செல்">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="laws.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const PAGE = 60;               // cards rendered per scroll batch; keeps first paint fast on phones
+  const MIN_WORD_COUNT = 5;      // a word must recur this often to appear in the dropdown
+  const MAX_WORDS = 250;
+  const SHARE_TITLE = 'மர்பி விதிகள்';
+  // Function words that would otherwise crowd the top of the dropdown.
+  const STOPWORDS = new Set(('ஒரு தான் நீங்கள் இருக்கும் என்று அது எந்த உங்கள் போது அதை விட உங்களுக்கு வேண்டும் என்பது ஆனால் ' +
+    'அந்த முடியாது மட்டும் வரும் அதன் இருந்தால் எப்போதும் எவ்வளவு விடும் இல்லை அதிக முடியும் யார் செய்ய ஒரே உங்களால் ' +
+    'வரை மட்டுமே செய்து வந்து என்றால் என்ன எப்போதுமே செய்யும் மீண்டும் மேல் செல்லும் எடுத்துக் ஒருவர் உள்ள அவர் கொள்ளும் ' +
+    'எது இருந்து வேண்டிய இருக்கிறது பற்றி உங்களை அப்போது போகும் கொள்ள கொண்டே கொண்டு கொண்டிருக்கும் இருக்காது ஆகும் கூடாது ' +
+    'முன் ஏற்கனவே கூட எந்தப் அந்தப் பின் இருக்க ஒன்று இந்த இருந்தாலும் அவ்வளவு விட்டால் அதில் கிடையாது அதைப் இன்னும் ' +
+    'அவர்கள் எதுவும் மிக அதற்கு அதைத் நாம் இது இதை அல்லது மற்றும் என உங்களைப் உங்களின் உங்களது அவை அவன் அவள் ' +
+    'இந்தப் எந்தவொரு என்ற என்பதை போல் போன்ற மிகவும் அதிகம் இருப்பார்கள் செய்வது அனைத்து அனைவரும் எதுவுமே முதல் முடியாத').split(' '));
+
+  const $ = id => document.getElementById(id);
+  const els = {
+    q: $('q'), clear: $('clearBtn'), words: $('words'), list: $('list'),
+    tabAll: $('tabAll'), tabFav: $('tabFav'), favCount: $('favCount'), status: $('status'),
+    themeBtn: $('themeBtn'), themeIcon: $('themeIcon'), themeLabel: $('themeLabel'),
+    toast: $('toast'), topBtn: $('topBtn'),
+  };
+
+  if (typeof LAWS === 'undefined' || !Array.isArray(LAWS)) {
+    els.list.innerHTML = '<p class="empty">விதிகள் தரவுக் கோப்பு (laws.js) ஏற்றப்படவில்லை.</p>';
+    return;
+  }
+  const byNum = new Map(LAWS.map(([n, t]) => [n, t]));
+
+  // ---------- storage (per-device; fails soft in private mode) ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  const favs = new Set(store.get('murphy.favs', []).filter(n => byNum.has(n)));
+  const saveFavs = () => { store.set('murphy.favs', [...favs].sort((a, b) => a - b)); els.favCount.textContent = favs.size; };
+
+  // ---------- theme: auto -> light -> dark ----------
+  const THEMES = ['auto', 'light', 'dark'];
+  const THEME_UI = {
+    auto:  { label: 'தானியங்கி', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>' },
+    light: { label: 'வெளிச்சம்', icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>' },
+    dark:  { label: 'இருள்', icon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>' },
+  };
+  let theme = (() => { try { return localStorage.getItem('murphy.theme') || 'auto'; } catch (e) { return 'auto'; } })();
+  const darkMq = matchMedia('(prefers-color-scheme: dark)');
+  function applyTheme() {
+    if (theme === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = theme;
+    const ui = THEME_UI[theme];
+    els.themeIcon.innerHTML = ui.icon;
+    els.themeLabel.textContent = ui.label;
+    els.themeBtn.title = 'தீம்: ' + ui.label;
+    const isDark = theme === 'dark' || (theme === 'auto' && darkMq.matches);
+    document.querySelector('meta[name="theme-color"]').content = isDark ? '#10131a' : '#1e3a6e';
+  }
+  els.themeBtn.addEventListener('click', () => {
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    try { localStorage.setItem('murphy.theme', theme); } catch (e) {}
+    applyTheme();
+  });
+  darkMq.addEventListener('change', applyTheme);
+
+  // ---------- word dropdown ----------
+  // Tamil block U+0B80–U+0BFF plus Latin letters; everything else (spaces, punctuation, digits) splits words.
+  const WORD_SPLIT = /[^஀-௿A-Za-z]+/;
+  (function buildWords() {
+    const counts = new Map();
+    for (const [, t] of LAWS) {
+      for (const w of t.split(WORD_SPLIT)) {
+        if (w.length < 2 || STOPWORDS.has(w)) continue;
+        counts.set(w, (counts.get(w) || 0) + 1);
+      }
+    }
+    const top = [...counts].filter(([, c]) => c >= MIN_WORD_COUNT)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ta')).slice(0, MAX_WORDS);
+    const frag = document.createDocumentFragment();
+    for (const [w, c] of top) {
+      const o = document.createElement('option');
+      o.value = w; o.textContent = `${w} (${c})`;
+      frag.appendChild(o);
+    }
+    els.words.appendChild(frag);
+  })();
+
+  // ---------- filtering & rendering ----------
+  let mode = 'all';
+  let results = [];
+  let rendered = 0;
+  let terms = [];
+  let highlightRe = null;
+  let targetNum = null;
+
+  const escHtml = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const norm = s => s.normalize('NFC').toLowerCase();
+
+  function compute() {
+    const raw = els.q.value.trim();
+    els.clear.hidden = !raw;
+    const pool = mode === 'fav' ? LAWS.filter(([n]) => favs.has(n)) : LAWS;
+    targetNum = null; terms = []; highlightRe = null;
+
+    const numMatch = raw.match(/^#?\s*(\d+)$/);
+    if (numMatch) {
+      targetNum = +numMatch[1];
+      results = pool.filter(([n]) => n === targetNum);
+    } else if (raw) {
+      // All space-separated terms must appear (substring match suits Tamil's agglutinative suffixes).
+      terms = norm(raw).split(/\s+/).filter(Boolean);
+      results = pool.filter(([, t]) => { const nt = norm(t); return terms.every(x => nt.includes(x)); });
+      highlightRe = new RegExp('(' + terms.sort((a, b) => b.length - a.length).map(escRe).join('|') + ')', 'gi');
+    } else {
+      results = pool;
+    }
+    const total = pool.length;
+    els.status.textContent = raw ? `${results.length} / ${total}` : `${total} விதிகள்`;
+
+    els.list.innerHTML = '';
+    rendered = 0;
+    if (!results.length) {
+      els.list.innerHTML = `<p class="empty">${mode === 'fav' && !favs.size
+        ? 'விரும்பிய பட்டியல் காலியாக உள்ளது. ஒரு விதியின் ☆ குறியைத் தொட்டுச் சேர்க்கலாம்.'
+        : 'பொருந்தும் விதிகள் இல்லை.'}</p>`;
+    }
+    renderMore();
+  }
+
+  const ICON_STAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"/></svg>';
+  const ICON_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>';
+
+  function card([n, t]) {
+    const div = document.createElement('article');
+    div.className = 'law' + (n === targetNum ? ' target' : '');
+    div.dataset.n = n;
+    const body = highlightRe ? escHtml(t).replace(highlightRe, '<mark>$1</mark>') : escHtml(t);
+    const fav = favs.has(n);
+    div.innerHTML = `<p>${body}</p><div class="law-foot"><span class="num">#${n}</span>` +
+      `<button class="fav" type="button" aria-pressed="${fav}" aria-label="${fav ? 'விருப்பத்திலிருந்து நீக்கு' : 'விருப்பத்தில் சேர்'}" title="விரும்பியவை">${ICON_STAR}</button>` +
+      `<button class="share" type="button" aria-label="பகிர்" title="பகிர்">${ICON_SHARE}</button></div>`;
+    return div;
+  }
+
+  function renderMore() {
+    if (rendered >= results.length) return;
+    const frag = document.createDocumentFragment();
+    const end = Math.min(rendered + PAGE, results.length);
+    for (let i = rendered; i < end; i++) frag.appendChild(card(results[i]));
+    rendered = end;
+    els.list.appendChild(frag);
+  }
+  // Plain scroll check instead of IntersectionObserver: IO doesn't re-fire if a batch leaves the sentinel still in view.
+  function maybeMore() { if (innerHeight + scrollY > document.documentElement.scrollHeight - 1500) renderMore(); }
+
+  // ---------- actions ----------
+  let toastTimer;
+  function toast(msg) {
+    els.toast.textContent = msg;
+    els.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2200);
+  }
+
+  function lawUrl(n) { return location.href.split('#')[0] + '#' + n; }
+
+  async function share(n) {
+    const text = `${SHARE_TITLE} #${n} - ${byNum.get(n)}`;
+    const url = /^https?:/.test(location.protocol) ? lawUrl(n) : undefined;
+    if (navigator.share) {
+      try { await navigator.share(url ? { title: SHARE_TITLE, text, url } : { title: SHARE_TITLE, text }); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    try {
+      await navigator.clipboard.writeText(url ? `${text}\n${url}` : text);
+      toast('நகலெடுக்கப்பட்டது — எங்கும் ஒட்டிப் பகிரலாம்');
+    } catch (e) {
+      toast('பகிர முடியவில்லை');
+    }
+  }
+
+  els.list.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const art = btn.closest('.law');
+    const n = +art.dataset.n;
+    if (btn.classList.contains('share')) { share(n); return; }
+    if (btn.classList.contains('fav')) {
+      const on = !favs.has(n);
+      on ? favs.add(n) : favs.delete(n);
+      saveFavs();
+      btn.setAttribute('aria-pressed', on);
+      btn.setAttribute('aria-label', on ? 'விருப்பத்திலிருந்து நீக்கு' : 'விருப்பத்தில் சேர்');
+      toast(on ? `#${n} விரும்பிய பட்டியலில் சேர்க்கப்பட்டது` : `#${n} விரும்பிய பட்டியலிலிருந்து நீக்கப்பட்டது`);
+      if (!on && mode === 'fav') { art.remove(); results = results.filter(([x]) => x !== n); rendered--; els.status.textContent = `${favs.size} விதிகள்`; if (!favs.size) compute(); }
+    }
+  });
+
+  let debounce;
+  els.q.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(() => { syncWordSelect(); compute(); }, 150); });
+  els.clear.addEventListener('click', () => { els.q.value = ''; els.words.value = ''; clearHash(); compute(); els.q.focus(); });
+  els.words.addEventListener('change', () => { els.q.value = els.words.value; clearHash(); compute(); scrollTo(0, 0); });
+  function syncWordSelect() { if (els.words.value !== els.q.value.trim()) els.words.value = ''; }
+  function clearHash() { if (location.hash) history.replaceState(null, '', location.pathname + location.search); }
+
+  function setMode(m) {
+    mode = m;
+    els.tabAll.setAttribute('aria-pressed', m === 'all');
+    els.tabFav.setAttribute('aria-pressed', m === 'fav');
+    compute(); scrollTo(0, 0);
+  }
+  els.tabAll.addEventListener('click', () => setMode('all'));
+  els.tabFav.addEventListener('click', () => setMode('fav'));
+
+  addEventListener('scroll', () => { els.topBtn.classList.toggle('show', scrollY > 600); maybeMore(); }, { passive: true });
+  els.topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // Shared links look like …/#123 — open straight to that law.
+  function fromHash() {
+    const n = parseInt(location.hash.slice(1), 10);
+    if (byNum.has(n)) { els.q.value = '#' + n; setMode('all'); }
+  }
+  addEventListener('hashchange', fromHash);
+
+  applyTheme();
+  saveFavs();
+  if (location.hash) fromHash(); else compute();
+
+  if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+})();
+</script>
+</body>
+</html>
