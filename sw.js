@@ -1,7 +1,7 @@
 // Network-first with offline fallback (same pattern as 3D Labyrinth).
 // Every release bumps CACHE_VERSION together with VERSION in index.html; tests/version.test.mjs enforces it.
 const CACHE_PREFIX = 'murphy-';
-const CACHE_VERSION = 'murphy-v1.1.0';
+const CACHE_VERSION = 'murphy-v1.1.1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

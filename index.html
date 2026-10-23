@@ -186,7 +186,7 @@
   <div id="list"></div>
 </main>
 <footer class="wrap">
-  © சுப. இரத்தினகிரி · <a href="mailto:srathinagiri@gmail.com?subject=மர்பி விதிகள்">கருத்து அனுப்ப</a> · <span class="version-badge">v1.1.0</span>
+  © சுப. இரத்தினகிரி · <a href="mailto:srathinagiri@gmail.com?subject=மர்பி விதிகள்">கருத்து அனுப்ப</a> · <span class="version-badge">v1.1.1</span>
 </footer>
 
 <div class="banner" id="updateBanner" hidden>
@@ -204,13 +204,13 @@
 </button>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="laws.js?v=1.1.0"></script>
+<script src="laws.js?v=1.1.1"></script>
 <script>
 (() => {
   'use strict';
 
   // Bump on every release, together with the v=… tags above, sw.js CACHE_VERSION and the manifest (tests/version.test.mjs).
-  const VERSION = '1.1.0';
+  const VERSION = '1.1.1';
   const PAGE = 60;              // cards rendered per scroll batch; keeps first paint fast on phones
   const PAGE_SIZE = 10;          // laws per page in paged mode (same as the Android app)
   const MIN_WORD_COUNT = 5;      // a word must recur this often to appear in the dropdown
@@ -498,10 +498,20 @@
   const showHelp = text => { $('installHelpText').textContent = text; installHelp.hidden = false; };
   const hideInstall = () => { installEvt = null; installBtn.hidden = true; };
   $('closeInstallHelp').addEventListener('click', () => { installHelp.hidden = true; });
+  // Chrome can keep firing beforeinstallprompt in the browser tab after install (e.g. when it added a
+  // shortcut rather than a full app), so also remember the install ourselves. Android's installed app
+  // shares Chrome's storage, so the flag set inside the app is seen by the tab too.
+  const INSTALLED_KEY = 'murphy.installed';
+  let installed = standalone || store.get(INSTALLED_KEY, false) === true;
+  const markInstalled = () => { installed = true; store.set(INSTALLED_KEY, true); hideInstall(); };
+  if (standalone) store.set(INSTALLED_KEY, true);
+  if (!standalone && navigator.getInstalledRelatedApps) {
+    navigator.getInstalledRelatedApps().then(apps => { if (apps.length) markInstalled(); }).catch(() => {});
+  }
   if (!standalone) {   // already running as the installed app: never offer install
-    addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; installBtn.hidden = false; });
-    addEventListener('appinstalled', () => { hideInstall(); installHelp.hidden = true; toast('செயலி நிறுவப்பட்டது'); });
-    if (isIOS) installBtn.hidden = false;
+    addEventListener('beforeinstallprompt', e => { e.preventDefault(); if (installed) return; installEvt = e; installBtn.hidden = false; });
+    addEventListener('appinstalled', () => { markInstalled(); installHelp.hidden = true; toast('செயலி நிறுவப்பட்டது'); });
+    if (isIOS && !installed) installBtn.hidden = false;
     installBtn.addEventListener('click', async () => {
       if (!installEvt) { showHelp(isIOS ? HELP_IOS : HELP_ANDROID); return; }
       const evt = installEvt;

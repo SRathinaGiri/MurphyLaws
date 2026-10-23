@@ -1,7 +1,7 @@
 {
   "name": "மர்பி விதிகள்",
   "short_name": "மர்பி",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "தமிழில் 1600-க்கும் மேற்பட்ட மர்பி விதிகள்",
   "lang": "ta",
   "id": "./",
@@ -10,6 +10,9 @@
   "display": "standalone",
   "background_color": "#f6f7fb",
   "theme_color": "#1e3a6e",
+  "related_applications": [
+    { "platform": "webapp", "url": "https://srathinagiri.github.io/MurphyLaws/manifest.webmanifest" }
+  ],
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
