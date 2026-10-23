@@ -103,11 +103,7 @@
   .fav[aria-pressed="true"] svg { fill: currentColor; }
   mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
   .empty { text-align: center; color: var(--muted); padding: 40px 10px; }
-  .pager {
-    position: sticky; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 6px;
-    background: var(--bg); border-top: 1px solid var(--border); padding: 8px 0;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-  }
+  .pager { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; }
   .pager[hidden] { display: none; }
   .pager button:disabled { opacity: .35; cursor: default; background: transparent; }
   .pager-pos { display: inline-flex; align-items: center; gap: 6px; font-size: .9rem; color: var(--muted); margin: 0 4px; }
@@ -161,21 +157,21 @@
       <button class="tab" id="pagedBtn" type="button" aria-pressed="false" title="ஒரு பக்கத்துக்கு 10 விதிகள்">10 / பக்கம்</button>
       <span class="status" id="status" aria-live="polite"></span>
     </div>
+    <nav class="pager" id="pager" aria-label="பக்கங்கள்" hidden>
+      <button class="icon-btn" id="pgFirst" type="button" aria-label="முதல் பக்கம்">«</button>
+      <button class="icon-btn" id="pgPrev" type="button" aria-label="முந்தைய பக்கம்">‹</button>
+      <span class="pager-pos">
+        <label for="pgNum" class="sr-only">பக்க எண்</label>
+        <input id="pgNum" type="number" min="1" inputmode="numeric"> / <span id="pgTotal"></span>
+      </span>
+      <button class="icon-btn" id="pgNext" type="button" aria-label="அடுத்த பக்கம்">›</button>
+      <button class="icon-btn" id="pgLast" type="button" aria-label="கடைசிப் பக்கம்">»</button>
+    </nav>
   </div>
 </header>
 
 <main class="wrap">
   <div id="list"></div>
-  <nav class="pager" id="pager" aria-label="பக்கங்கள்" hidden>
-    <button class="icon-btn" id="pgFirst" type="button" aria-label="முதல் பக்கம்">«</button>
-    <button class="icon-btn" id="pgPrev" type="button" aria-label="முந்தைய பக்கம்">‹</button>
-    <span class="pager-pos">
-      <label for="pgNum" class="sr-only">பக்க எண்</label>
-      <input id="pgNum" type="number" min="1" inputmode="numeric"> / <span id="pgTotal"></span>
-    </span>
-    <button class="icon-btn" id="pgNext" type="button" aria-label="அடுத்த பக்கம்">›</button>
-    <button class="icon-btn" id="pgLast" type="button" aria-label="கடைசிப் பக்கம்">»</button>
-  </nav>
 </main>
 <footer class="wrap">
   © சுப. இரத்தினகிரி · <a href="mailto:srathinagiri@gmail.com?subject=மர்பி விதிகள்">கருத்து அனுப்ப</a>
@@ -428,14 +424,12 @@
   els.tabAll.addEventListener('click', () => setMode('all'));
   els.tabFav.addEventListener('click', () => setMode('fav'));
 
-  // Top button would sit on the sticky pager, so it is scroll-mode only.
-  addEventListener('scroll', () => { els.topBtn.classList.toggle('show', !paged && scrollY > 600); maybeMore(); }, { passive: true });
+  addEventListener('scroll', () => { els.topBtn.classList.toggle('show', scrollY > 600); maybeMore(); }, { passive: true });
 
   function setPaged(on) {
     paged = on;
     store.set('murphy.paged', on);
     els.pagedBtn.setAttribute('aria-pressed', on);
-    els.topBtn.classList.remove('show');
     compute(); scrollTo(0, 0);
   }
   els.pagedBtn.addEventListener('click', () => setPaged(!paged));
