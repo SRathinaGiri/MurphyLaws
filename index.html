@@ -35,6 +35,8 @@
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  /* Class display rules (e.g. .icon-btn's inline-flex) would otherwise override the hidden attribute. */
+  [hidden] { display: none !important; }
   html, body { margin: 0; }
   body {
     background: var(--bg); color: var(--text);
@@ -186,7 +188,7 @@
   <div id="list"></div>
 </main>
 <footer class="wrap">
-  © சுப. இரத்தினகிரி · <a href="mailto:srathinagiri@gmail.com?subject=மர்பி விதிகள்">கருத்து அனுப்ப</a> · <span class="version-badge">v1.1.1</span>
+  © சுப. இரத்தினகிரி · <a href="mailto:srathinagiri@gmail.com?subject=மர்பி விதிகள்">கருத்து அனுப்ப</a> · <span class="version-badge">v1.1.2</span>
 </footer>
 
 <div class="banner" id="updateBanner" hidden>
@@ -204,13 +206,13 @@
 </button>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="laws.js?v=1.1.1"></script>
+<script src="laws.js?v=1.1.2"></script>
 <script>
 (() => {
   'use strict';
 
   // Bump on every release, together with the v=… tags above, sw.js CACHE_VERSION and the manifest (tests/version.test.mjs).
-  const VERSION = '1.1.1';
+  const VERSION = '1.1.2';
   const PAGE = 60;              // cards rendered per scroll batch; keeps first paint fast on phones
   const PAGE_SIZE = 10;          // laws per page in paged mode (same as the Android app)
   const MIN_WORD_COUNT = 5;      // a word must recur this often to appear in the dropdown

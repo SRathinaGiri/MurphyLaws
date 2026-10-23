@@ -27,6 +27,10 @@ test('service worker only deletes its own old caches (other apps share the githu
   assert.match(sw, /cache: 'reload'/, 'service worker must pre-cache from the network');
 });
 
+test('hidden attribute always wins over class display rules (Install button stayed visible in v1.1.1)', () => {
+  assert.match(read('index.html'), /\[hidden\]\s*\{\s*display:\s*none\s*!important;?\s*\}/);
+});
+
 test('PWA is installable: PNG 192/512 icons (any + maskable) exist, are listed and pre-cached', () => {
   const m = JSON.parse(read('manifest.webmanifest'));
   assert.equal(m.display, 'standalone');
