@@ -466,8 +466,10 @@
 
   // Chrome/Edge only: surface install in the UI, since Android Chrome tucks it under "Add to home screen".
   const installBtn = $('installBtn');
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   let installEvt = null;
-  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; installBtn.hidden = false; });
+  // Already running as the installed app: never offer install again.
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); if (standalone) return; installEvt = e; installBtn.hidden = false; });
   addEventListener('appinstalled', () => { installEvt = null; installBtn.hidden = true; toast('செயலி நிறுவப்பட்டது'); });
   installBtn.addEventListener('click', async () => {
     if (!installEvt) return;
