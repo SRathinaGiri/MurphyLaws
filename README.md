@@ -4,6 +4,7 @@
 
 - Search by words (all terms must match) or jump to a law with `#123`
 - Dropdown of the most repeated words
+- Continuous scroll, or "10 / பக்கம்" paging (« ‹ page › », jump to page, ←/→ keys)
 - Bookmark (☆) laws — stored on your device
 - Share any law; shared links open at that law (`…/#123`)
 - Auto / light / dark themes

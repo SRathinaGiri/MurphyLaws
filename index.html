@@ -103,6 +103,18 @@
   .fav[aria-pressed="true"] svg { fill: currentColor; }
   mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
   .empty { text-align: center; color: var(--muted); padding: 40px 10px; }
+  .pager {
+    position: sticky; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--bg); border-top: 1px solid var(--border); padding: 8px 0;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  .pager[hidden] { display: none; }
+  .pager button:disabled { opacity: .35; cursor: default; background: transparent; }
+  .pager-pos { display: inline-flex; align-items: center; gap: 6px; font-size: .9rem; color: var(--muted); margin: 0 4px; }
+  .pager-pos input {
+    width: 4.2em; height: 36px; text-align: center; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+  }
 
   .toast {
     position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
@@ -146,6 +158,7 @@
     <div class="tabs">
       <button class="tab" id="tabAll" type="button" aria-pressed="true">அனைத்தும்</button>
       <button class="tab" id="tabFav" type="button" aria-pressed="false">விரும்பியவை (<span id="favCount">0</span>)</button>
+      <button class="tab" id="pagedBtn" type="button" aria-pressed="false" title="ஒரு பக்கத்துக்கு 10 விதிகள்">10 / பக்கம்</button>
       <span class="status" id="status" aria-live="polite"></span>
     </div>
   </div>
@@ -153,6 +166,16 @@
 
 <main class="wrap">
   <div id="list"></div>
+  <nav class="pager" id="pager" aria-label="பக்கங்கள்" hidden>
+    <button class="icon-btn" id="pgFirst" type="button" aria-label="முதல் பக்கம்">«</button>
+    <button class="icon-btn" id="pgPrev" type="button" aria-label="முந்தைய பக்கம்">‹</button>
+    <span class="pager-pos">
+      <label for="pgNum" class="sr-only">பக்க எண்</label>
+      <input id="pgNum" type="number" min="1" inputmode="numeric"> / <span id="pgTotal"></span>
+    </span>
+    <button class="icon-btn" id="pgNext" type="button" aria-label="அடுத்த பக்கம்">›</button>
+    <button class="icon-btn" id="pgLast" type="button" aria-label="கடைசிப் பக்கம்">»</button>
+  </nav>
 </main>
 <footer class="wrap">
   © சுப. இரத்தினகிரி · <a href="mailto:srathinagiri@gmail.com?subject=மர்பி விதிகள்">கருத்து அனுப்ப</a>
@@ -169,6 +192,7 @@
   'use strict';
 
   const PAGE = 60;               // cards rendered per scroll batch; keeps first paint fast on phones
+  const PAGE_SIZE = 10;          // laws per page in paged mode (same as the Android app)
   const MIN_WORD_COUNT = 5;      // a word must recur this often to appear in the dropdown
   const MAX_WORDS = 250;
   const SHARE_TITLE = 'மர்பி விதிகள்';
@@ -187,6 +211,8 @@
     tabAll: $('tabAll'), tabFav: $('tabFav'), favCount: $('favCount'), status: $('status'),
     themeBtn: $('themeBtn'), themeIcon: $('themeIcon'), themeLabel: $('themeLabel'),
     toast: $('toast'), topBtn: $('topBtn'),
+    pagedBtn: $('pagedBtn'), pager: $('pager'), pgNum: $('pgNum'), pgTotal: $('pgTotal'),
+    pgFirst: $('pgFirst'), pgPrev: $('pgPrev'), pgNext: $('pgNext'), pgLast: $('pgLast'),
   };
 
   if (typeof LAWS === 'undefined' || !Array.isArray(LAWS)) {
@@ -258,12 +284,15 @@
   let terms = [];
   let highlightRe = null;
   let targetNum = null;
+  let paged = store.get('murphy.paged', false) === true;
+  let page = 1;
 
   const escHtml = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const norm = s => s.normalize('NFC').toLowerCase();
 
-  function compute() {
+  function compute(keepPage = false) {
+    if (!keepPage) page = 1;
     const raw = els.q.value.trim();
     els.clear.hidden = !raw;
     const pool = mode === 'fav' ? LAWS.filter(([n]) => favs.has(n)) : LAWS;
@@ -291,7 +320,7 @@
         ? 'விரும்பிய பட்டியல் காலியாக உள்ளது. ஒரு விதியின் ☆ குறியைத் தொட்டுச் சேர்க்கலாம்.'
         : 'பொருந்தும் விதிகள் இல்லை.'}</p>`;
     }
-    renderMore();
+    if (paged) renderPage(); else { els.pager.hidden = true; renderMore(); }
   }
 
   const ICON_STAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"/></svg>';
@@ -318,7 +347,26 @@
     els.list.appendChild(frag);
   }
   // Plain scroll check instead of IntersectionObserver: IO doesn't re-fire if a batch leaves the sentinel still in view.
-  function maybeMore() { if (innerHeight + scrollY > document.documentElement.scrollHeight - 1500) renderMore(); }
+  function maybeMore() { if (!paged && innerHeight + scrollY > document.documentElement.scrollHeight - 1500) renderMore(); }
+
+  function renderPage() {
+    const pages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+    page = Math.min(Math.max(1, page), pages);
+    if (results.length) {
+      els.list.innerHTML = '';
+      const frag = document.createDocumentFragment();
+      for (const r of results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)) frag.appendChild(card(r));
+      els.list.appendChild(frag);
+    }
+    els.pager.hidden = results.length <= PAGE_SIZE;
+    els.pgNum.value = page; els.pgNum.max = pages; els.pgTotal.textContent = pages;
+    els.pgFirst.disabled = els.pgPrev.disabled = page === 1;
+    els.pgNext.disabled = els.pgLast.disabled = page === pages;
+  }
+  function goPage(p) {
+    if (!paged || p === page) { els.pgNum.value = page; return; }
+    page = p; renderPage(); scrollTo(0, 0);
+  }
 
   // ---------- actions ----------
   let toastTimer;
@@ -359,7 +407,8 @@
       btn.setAttribute('aria-pressed', on);
       btn.setAttribute('aria-label', on ? 'விருப்பத்திலிருந்து நீக்கு' : 'விருப்பத்தில் சேர்');
       toast(on ? `#${n} விரும்பிய பட்டியலில் சேர்க்கப்பட்டது` : `#${n} விரும்பிய பட்டியலிலிருந்து நீக்கப்பட்டது`);
-      if (!on && mode === 'fav') { art.remove(); results = results.filter(([x]) => x !== n); rendered--; els.status.textContent = `${favs.size} விதிகள்`; if (!favs.size) compute(); }
+      if (!on && mode === 'fav' && paged) compute(true);   // refill the page from the next one
+      else if (!on && mode === 'fav') { art.remove(); results = results.filter(([x]) => x !== n); rendered--; els.status.textContent = `${favs.size} விதிகள்`; if (!favs.size) compute(); }
     }
   });
 
@@ -379,7 +428,30 @@
   els.tabAll.addEventListener('click', () => setMode('all'));
   els.tabFav.addEventListener('click', () => setMode('fav'));
 
-  addEventListener('scroll', () => { els.topBtn.classList.toggle('show', scrollY > 600); maybeMore(); }, { passive: true });
+  // Top button would sit on the sticky pager, so it is scroll-mode only.
+  addEventListener('scroll', () => { els.topBtn.classList.toggle('show', !paged && scrollY > 600); maybeMore(); }, { passive: true });
+
+  function setPaged(on) {
+    paged = on;
+    store.set('murphy.paged', on);
+    els.pagedBtn.setAttribute('aria-pressed', on);
+    els.topBtn.classList.remove('show');
+    compute(); scrollTo(0, 0);
+  }
+  els.pagedBtn.addEventListener('click', () => setPaged(!paged));
+  els.pgFirst.addEventListener('click', () => goPage(1));
+  els.pgPrev.addEventListener('click', () => goPage(page - 1));
+  els.pgNext.addEventListener('click', () => goPage(page + 1));
+  els.pgLast.addEventListener('click', () => goPage(+els.pgNum.max));
+  els.pgNum.addEventListener('change', () => {
+    const p = parseInt(els.pgNum.value, 10);
+    goPage(Number.isFinite(p) ? Math.min(Math.max(1, p), +els.pgNum.max) : page);
+  });
+  addEventListener('keydown', e => {
+    if (!paged || e.altKey || e.ctrlKey || e.metaKey || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+    if (e.key === 'ArrowRight' && !els.pgNext.disabled) goPage(page + 1);
+    else if (e.key === 'ArrowLeft' && !els.pgPrev.disabled) goPage(page - 1);
+  });
   els.topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
 
   // Shared links look like …/#123 — open straight to that law.
@@ -391,6 +463,7 @@
 
   applyTheme();
   saveFavs();
+  els.pagedBtn.setAttribute('aria-pressed', paged);
   if (location.hash) fromHash(); else compute();
 
   if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
